@@ -62,7 +62,35 @@ function explainTypeScriptError(diagnostic: vscode.Diagnostic): ErrorExplanation
     // 에러 코드별 설명 생성
     switch (errorCode) {
         // 기존 switch 문에 다음 case들을 추가:
-
+        case 1378: // Top-level await module setting error
+        explanation.title = "Top-level await 설정 에러";
+        explanation.description = "Top-level await는 특정 모듈 설정에서만 사용할 수 있습니다.";
+        explanation.solutions = [
+            {
+                title: 'tsconfig.json 설정 변경',
+                code: `{
+        "compilerOptions": {
+            "target": "es2017",
+            "module": "esnext", // 또는 'es2022', 'system', 'node16', 'nodenext', 'preserve'
+            "moduleResolution": "node"
+        }
+    }`
+            },
+            {
+                title: 'async 함수 내부로 이동',
+                code: `async function init() {
+        await Promise.resolve();
+    }
+    init();`
+            },
+            {
+                title: 'IIFE 사용',
+                code: `(async () => {
+        await Promise.resolve();
+    })();`
+            }
+        ];
+        break;
         // 1. Type Errors (2000-2999)
         case 2300: // Duplicate identifier
             const duplicateIdentifier = errorMessage.match(/'([^']+)'/)?.[1] || 'unknown';
@@ -96,25 +124,82 @@ function explainTypeScriptError(diagnostic: vscode.Diagnostic): ErrorExplanation
             ];
             break;
 
-        case 2322: // Type is not assignable
+            case 2322: // Type is not assignable
             const sourceType = errorMessage.match(/Type '([^']+)'/)?.[1];
             const targetType = errorMessage.match(/type '([^']+)'/)?.[1];
             explanation.title = `타입 '${sourceType}'을 '${targetType}'에 할당할 수 없음`;
             explanation.description = `'${sourceType}' 타입은 '${targetType}' 타입에 할당할 수 없습니다.`;
             explanation.solutions = [
                 {
-                    title: '타입 단언 사용',
-                    code: `(value as ${targetType})`
+                    title: '올바른 타입의 값 사용',
+                    code: `// 예시: string 타입에 number를 할당하려 할 때
+        let value: string = "문자열"; // number 대신 string 값 사용`
                 },
                 {
-                    title: '타입 변환 함수 사용',
-                    code: `function to${targetType}(value: ${sourceType}): ${targetType} {
-// 적절한 변환 로직 구현
-}`
+                    title: '타입 정의 수정',
+                    code: `// 타입이 더 넓은 범위를 포함해야 하는 경우
+        interface Example {
+            value: string | number; // 유니온 타입 사용
+        }`
+                },
+                {
+                    title: '명시적 변환 함수 사용',
+                    code: `// 예시: number를 string으로 변환
+        const num = 42;
+        const str = num.toString(); // 명시적이고 안전한 변환`
                 }
             ];
             break;
-
+            case 2314: // Generic type requires type arguments
+            const genericTypeName = errorMessage.match(/Generic type '([^']+)'/)?.[1] || '';
+            const requiredCount = errorMessage.match(/requires (\d+) type argument/)?.[1] || '1';
+            
+            explanation.title = `제네릭 타입 '${genericTypeName}'에는 타입 인수가 필요합니다`;
+            explanation.description = `'${genericTypeName}' 타입은 ${requiredCount}개의 타입 매개변수가 필요한 제네릭 타입입니다.`;
+            explanation.solutions = [
+                {
+                    title: '명시적으로 타입 인수 제공',
+                    code: `// 예시 1: 한 개의 타입 매개변수
+        interface Container<T> {
+            value: T;
+        }
+        const container: Container<string> = {
+            value: "hello"
+        };
+        
+        // 예시 2: 여러 개의 타입 매개변수
+        interface Pair<T, U> {
+            first: T;
+            second: U;
+        }
+        const pair: Pair<number, string> = {
+            first: 1,
+            second: "two"
+        };`
+                },
+                {
+                    title: '타입 추론을 활용한 방법',
+                    code: `// 예시: 제네릭 함수 사용
+        function createContainer<T>(value: T): Container<T> {
+            return { value };
+        }
+        
+        // 타입이 자동으로 추론됨
+        const strContainer = createContainer("hello");
+        const numContainer = createContainer(42);`
+                },
+                {
+                    title: '자주 사용하는 타입에 별칭 사용',
+                    code: `// 타입 별칭으로 미리 정의
+        type StringContainer = Container<string>;
+        type NumberContainer = Container<number>;
+        
+        // 사용
+        const container1: StringContainer = { value: "hello" };
+        const container2: NumberContainer = { value: 42 };`
+                }
+            ];
+            break;
         // 2. Syntax Errors (1000-1999)
         case 1005: // Expected token
             const expectedToken = errorMessage.match(/'([^']+)'/)?.[1];
@@ -157,7 +242,43 @@ function explainTypeScriptError(diagnostic: vscode.Diagnostic): ErrorExplanation
                 }
             ];
             break;
-
+            case 2341: // Property is private
+            const propName = errorMessage.match(/'([^']+)'/)?.[1] || 'property';
+            const className = errorMessage.match(/class '([^']+)'/)?.[1] || 'Class';
+            
+            explanation.title = `프로퍼티 '${propName}'은 private이며 '${className}' 클래스 내에서만 접근 가능`;
+            explanation.description = `private으로 선언된 '${propName}'는 클래스 외부에서 접근할 수 없습니다.`;
+            explanation.solutions = [
+                {
+                    title: 'public 게터/세터 메서드 사용',
+                    code: `class ${className} {
+            private ${propName}: string;
+        
+            // getter 추가
+            public get${propName.charAt(0).toUpperCase() + propName.slice(1)}(): string {
+                return this.${propName};
+            }
+        
+            // setter 추가
+            public set${propName.charAt(0).toUpperCase() + propName.slice(1)}(value: string) {
+                this.${propName} = value;
+            }
+        }`
+                },
+                {
+                    title: 'protected로 변경 (상속 허용)',
+                    code: `class ${className} {
+            protected ${propName}: string;
+        }`
+                },
+                {
+                    title: 'public으로 변경 (모든 접근 허용)',
+                    code: `class ${className} {
+            public ${propName}: string;
+        }`
+                }
+            ];
+            break;
         // 4. Decorator Errors (1200-1299)
         case 1206: // Invalid decorator
             explanation.title = "데코레이터가 유효하지 않음";
@@ -495,6 +616,40 @@ import { ${missingModuleName} } from '${missingModule}';`
                 {
                     title: '타입 선언 변경',
                     code: `const value: ${firstType} = /* ${firstType} 값 */;`
+                }
+            ];
+            break;
+            case 18048: // Property is possibly undefined
+            const propertyPath = errorMessage.match(/'([^']+)'/)?.[1] || 'property';
+            
+            explanation.title = `'${propertyPath}'가 undefined일 수 있음`;
+            explanation.description = `'${propertyPath}'에 접근하기 전에 undefined 여부를 확인해야 합니다.`;
+            explanation.solutions = [
+                {
+                    title: '옵셔널 체이닝 사용',
+                    code: `// 안전한 접근
+        console.log(deepObj?.prop?.value);`
+                },
+                {
+                    title: '조건문으로 확인',
+                    code: `// undefined 체크
+        if (deepObj.prop !== undefined) {
+            console.log(deepObj.prop.value);
+        }`
+                },
+                {
+                    title: '기본값 설정',
+                    code: `// 기본값 제공
+        console.log(deepObj.prop?.value ?? 'default value');`
+                },
+                {
+                    title: '초기값 보장',
+                    code: `// 객체 생성 시 초기값 설정
+        const deepObj: DeepObject = {
+            prop: {
+                value: "초기값"
+            }
+        };`
                 }
             ];
             break;
