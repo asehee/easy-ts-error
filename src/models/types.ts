@@ -1,3 +1,6 @@
+// src/models/types.ts
+import * as vscode from 'vscode';
+
 export interface ErrorExplanation {
     title: string;
     description: string;
@@ -11,12 +14,6 @@ export interface Solution {
 
 export interface ErrorHandler {
     canHandle(errorCode: number): boolean;
-    handle(errorMessage: string): ErrorExplanation;
-}
-
-export enum ErrorCategory {
-    Syntax = 'Syntax',
-    Type = 'Type',
-    Module = 'Module',
-    Config = 'Config'
+    // errorMessage 대신 vscode.Diagnostic을 받도록 수정
+    handle(diagnostic: vscode.Diagnostic): ErrorExplanation;
 }
