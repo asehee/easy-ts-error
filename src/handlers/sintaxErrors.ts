@@ -291,18 +291,22 @@ export class SyntaxErrorHandler implements ErrorHandler {
     private handleUnterminatedString(errorMessage: string): ErrorExplanation {
         return {
             title: '종료되지 않은 문자열',
-            description: '문자열이 적절하게 닫히지 않았습니다.',
+            description: '문자열이 적절히 닫히지 않았습니다. 닫는 따옴표가 필요합니다.',
             solutions: [
                 {
-                    title: '문자열 닫기',
-                    code: `const str = "Hello World"; // 따옴표로 닫기`
+                    title: '문자열 닫기 - 큰따옴표 사용',
+                    code: `const str = "Hello world";  // 큰따옴표로 문자열 닫기`
                 },
                 {
-                    title: '여러 줄 문자열 사용',
-                    code: `const multiLine = \`
-    여러 줄
-    문자열
-\`;`
+                    title: '문자열 닫기 - 작은따옴표 사용',
+                    code: `const str = 'Hello world';  // 작은따옴표로 문자열 닫기`
+                },
+                {
+                    title: '여러 줄 문자열 - 템플릿 리터럴 사용',
+                    code: `const str = \`
+        Hello 
+        world
+    \`;  // 백틱으로 여러 줄 문자열 만들기`
                 }
             ]
         };

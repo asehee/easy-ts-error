@@ -63,6 +63,26 @@ export class TypeErrorHandler implements ErrorHandler {
                 return this.handleTypeNotArray(errorMessage);
             case 2493: // Tuple type has no element at index
                 return this.handleTupleIndexOutOfBounds(errorMessage);
+                case 2349: // This expression is not callable
+                return this.handleNotCallable(errorMessage);
+            case 2367: // This comparison appears to be unintentional
+                return this.handleUnintentionalComparison(errorMessage);
+            case 2388: // Function overload must not be static
+                return this.handleOverloadStatic(errorMessage);
+            case 2393: // Duplicate function implementation
+                return this.handleDuplicateImplementation(errorMessage);
+            case 2451: // Cannot redeclare block-scoped variable
+                return this.handleBlockScopedRedeclaration(errorMessage);
+            case 2456: // Type alias circularly references itself
+                return this.handleCircularTypeAlias();
+            case 2462: // A rest element must be last in a destructuring pattern
+                return this.handleRestElementLast();
+            case 2487: // The left-hand side of a for...of statement cannot use a type annotation
+                return this.handleForOfTypeAnnotation();
+            case 2554: // Expected arguments, but got none
+                return this.handleMissingArguments(errorMessage);
+            case 2571: // Object is of type 'unknown'
+                return this.handleUnknownType();
             default:
                 return explanation;
         }
@@ -85,7 +105,274 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-
+    private handleNotCallable(errorMessage: string): ErrorExplanation {
+        const expressionType = errorMessage.match(/Type '([^']+)'/)?.[1] || 'expression';
+        
+        return {
+            title: '호출할 수 없는 표현식',
+            description: `타입이 '${expressionType}'인 표현식은 호출할 수 없습니다. 이 타입은 호출 시그니처를 가지고 있지 않습니다.`,
+            solutions: [
+                {
+                    title: '올바른 함수 정의',
+                    code: `// 잘못된 사용
+    const notFunction = { hello: "world" };
+    notFunction(); // 에러!
+    
+    // 올바른 사용
+    const correctFunction = () => { return "hello world"; };
+    correctFunction(); // 정상 동작`
+                },
+                {
+                    title: '메서드로 접근',
+                    code: `// 객체의 메서드로 정의
+    const obj = {
+        hello: "world",
+        greet() {
+            return this.hello;
+        }
+    };
+    obj.greet(); // 객체의 메서드로 호출`
+                },
+                {
+                    title: '호출 가능한 타입 정의',
+                    code: `// 호출 시그니처를 가진 타입 정의
+    type Callable = {
+        (): string;  // 호출 시그니처
+        hello: string;  // 속성
+    };
+    
+    // 구현
+    const callable: Callable = Object.assign(
+        () => "world",
+        { hello: "world" }
+    );
+    
+    callable();      // 함수로 호출 가능
+    callable.hello;  // 속성 접근 가능`
+                }
+            ]
+        };
+    }
+    
+    private handleUnintentionalComparison(errorMessage: string): ErrorExplanation {
+        const type1 = errorMessage.match(/types '([^']+)'/)?.[1];
+        const type2 = errorMessage.match(/and '([^']+)'/)?.[1];
+        
+        return {
+            title: '의도하지 않은 타입 비교',
+            description: `'${type1}'와 '${type2}' 타입은 서로 겹치는 부분이 없어 비교가 의미가 없습니다.`,
+            solutions: [
+                {
+                    title: '타입 가드 사용',
+                    code: `if (typeof value === '${type1}') {
+        // ${type1} 타입일 때의 처리
+    } else if (typeof value === '${type2}') {
+        // ${type2} 타입일 때의 처리
+    }`
+                },
+                {
+                    title: '명시적 타입 변환 후 비교',
+                    code: `// 명시적 변환 후 비교
+    const value1 = String(firstValue);
+    const value2 = String(secondValue);
+    if (value1 === value2) {
+        // 동일한 타입으로 변환 후 비교
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleOverloadStatic(errorMessage: string): ErrorExplanation {
+        return {
+            title: 'Function overload must be static',
+            description: '오버로드된 함수는 static 키워드를 사용해야 합니다.',
+            solutions: [
+                {
+                    title: 'static 키워드 추가하기',
+                    code: `class Example {
+        static test(value: string): string;
+        static test(value: number): number;
+        static test(value: string | number): string | number {
+            return value;
+        }
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleDuplicateImplementation(errorMessage: string): ErrorExplanation {
+        return {
+            title: '중복된 함수 구현',
+            description: '동일한 함수가 여러 번 구현되었습니다.',
+            solutions: [
+                {
+                    title: '중복 구현 제거',
+                    code: `// 하나의 구현만 유지
+    function example(a: string): string;
+    function example(a: number): number;
+    function example(a: string | number): string | number {
+        return typeof a === "string" ? a : a.toString();
+    }`
+                },
+                {
+                    title: '다른 이름 사용',
+                    code: `// 다른 이름으로 분리
+    function handleString(a: string): string {
+        return a;
+    }
+    
+    function handleNumber(a: number): number {
+        return a;
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleBlockScopedRedeclaration(errorMessage: string): ErrorExplanation {
+        const variableName = errorMessage.match(/'([^']+)'/)?.[1] || 'variable';
+        return {
+            title: '블록 스코프 변수 재선언',
+            description: `블록 스코프 변수 '${variableName}'를 재선언할 수 없습니다.`,
+            solutions: [
+                {
+                    title: '다른 이름 사용',
+                    code: `let ${variableName}1 = firstValue;
+    let ${variableName}2 = secondValue;`
+                },
+                {
+                    title: '변수 재할당',
+                    code: `let ${variableName} = firstValue;
+    ${variableName} = secondValue; // 재선언 대신 재할당`
+                }
+            ]
+        };
+    }
+    
+    private handleCircularTypeAlias(): ErrorExplanation {
+        return {
+            title: '순환 참조 타입 별칭',
+            description: '타입 별칭이 자기 자신을 참조하고 있습니다.',
+            solutions: [
+                {
+                    title: 'interface 사용',
+                    code: `// 타입 별칭 대신 interface 사용
+    interface Node {
+        value: string;
+        next?: Node;
+    }`
+                },
+                {
+                    title: '간접 참조 사용',
+                    code: `type NodeValue = {
+        value: string;
+    }
+    type Node = NodeValue & {
+        next?: Node;
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleRestElementLast(): ErrorExplanation {
+        return {
+            title: 'Rest 요소는 마지막에 위치해야 함',
+            description: '구조 분해 패턴에서 rest 요소는 마지막에 있어야 합니다.',
+            solutions: [
+                {
+                    title: 'Rest 요소를 마지막으로 이동',
+                    code: `// 배열 구조 분해
+    const [first, second, ...rest] = array;
+    
+    // 객체 구조 분해
+    const { prop1, prop2, ...remaining } = object;`
+                }
+            ]
+        };
+    }
+    
+    private handleForOfTypeAnnotation(): ErrorExplanation {
+        return {
+            title: 'for...of 문의 왼쪽에 타입 주석 사용 불가',
+            description: 'for...of 문의 변수 선언에는 타입 주석을 사용할 수 없습니다.',
+            solutions: [
+                {
+                    title: '타입 주석 제거',
+                    code: `// 타입 추론 사용
+    for (const item of items) {
+        // 사용
+    }
+    
+    // 필요한 경우 배열 타입 지정
+    const items: string[] = ["a", "b", "c"];
+    for (const item of items) {
+        // item은 자동으로 string 타입
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleMissingArguments(errorMessage: string): ErrorExplanation {
+        const expected = errorMessage.match(/Expected (\d+)/)?.[1] || '필요한';
+        return {
+            title: '인수 누락',
+            description: `이 함수는 ${expected}개의 인수가 필요하지만, 인수가 제공되지 않았습니다.`,
+            solutions: [
+                {
+                    title: '필요한 인수 제공',
+                    code: `// 필요한 모든 인수 전달
+    function example(a: string, b: number) {
+        // ...
+    }
+    example("text", 42);`
+                },
+                {
+                    title: '선택적 매개변수로 변경',
+                    code: `// 매개변수를 선택적으로 만들기
+    function example(a?: string, b?: number) {
+        // 기본값 처리
+        const valueA = a ?? "default";
+        const valueB = b ?? 0;
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleUnknownType(): ErrorExplanation {
+        return {
+            title: 'unknown 타입 객체',
+            description: '이 객체는 unknown 타입이므로 직접 사용할 수 없습니다.',
+            solutions: [
+                {
+                    title: '타입 가드 사용',
+                    code: `if (typeof value === "string") {
+        // value는 string 타입
+        console.log(value.toUpperCase());
+    } else if (typeof value === "number") {
+        // value는 number 타입
+        console.log(value.toFixed(2));
+    }`
+                },
+                {
+                    title: '타입 단언 사용',
+                    code: `// 타입이 확실한 경우에만 사용
+    const value = unknownValue as string;
+    // 또는
+    const value = <string>unknownValue;
+    
+    // 더 안전한 방법
+    if (value instanceof Error) {
+        console.log(value.message);
+    }`
+                }
+            ]
+        };
+    }
     private handleCannotFindName(errorMessage: string): ErrorExplanation {
         const missingIdentifier = errorMessage.match(/Cannot find name '([^']+)'/)?.[1] || 'unknown';
         return {
