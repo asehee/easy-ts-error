@@ -8,6 +8,7 @@ export class SyntaxErrorHandler implements ErrorHandler {
     }
 
     handle(diagnostic: vscode.Diagnostic): ErrorExplanation {
+        console.log('TypeErrorHandler handling diagnostic:', diagnostic);
         const errorCode = diagnostic.code as number;
         const errorMessage = diagnostic.message;
 

@@ -10,8 +10,12 @@ export class TypeErrorHandler implements ErrorHandler {
     }
 
     handle(diagnostic: vscode.Diagnostic): ErrorExplanation {
+
+        console.log('TypeErrorHandler.handle called with diagnostic:', diagnostic);
+        
         const errorCode = diagnostic.code as number;
         const errorMessage = diagnostic.message;
+        console.log('Processing error code:', errorCode);
 
         // 기본 설명 객체
         const explanation: ErrorExplanation = {
@@ -67,8 +71,8 @@ export class TypeErrorHandler implements ErrorHandler {
                 return this.handleNotCallable(errorMessage);
             case 2367: // This comparison appears to be unintentional
                 return this.handleUnintentionalComparison(errorMessage);
-            case 2388: // Function overload must not be static
-                return this.handleOverloadStatic(errorMessage);
+            case 2387: // Function overload must not be static
+                return this.handleOverloadStatic(diagnostic);
             case 2393: // Duplicate function implementation
                 return this.handleDuplicateImplementation(errorMessage);
             case 2451: // Cannot redeclare block-scoped variable
@@ -183,23 +187,26 @@ export class TypeErrorHandler implements ErrorHandler {
         };
     }
     
-    private handleOverloadStatic(errorMessage: string): ErrorExplanation {
-        return {
-            title: 'Function overload must be static',
-            description: '오버로드된 함수는 static 키워드를 사용해야 합니다.',
-            solutions: [
-                {
-                    title: 'static 키워드 추가하기',
-                    code: `class Example {
-        static test(value: string): string;
-        static test(value: number): number;
-        static test(value: string | number): string | number {
-            return value;
-        }
-    }`
-                }
-            ]
+    private handleOverloadStatic(diagnostic: vscode.Diagnostic): ErrorExplanation {
+        console.log('handleOverloadStatic called with diagnostic:', diagnostic);
+        
+        const explanation: ErrorExplanation = {
+            title: "Function overload must be static",
+            description: "오버로드된 함수의 모든 시그니처는 일관되게 static이거나 non-static이어야 합니다.",
+            solutions: [{
+                title: "모든 오버로드에 static 추가",
+                code: `class Example {
+    static overloadedMethod(param: string): string;
+    static overloadedMethod(param: number): number;
+    static overloadedMethod(param: string | number): string | number {
+        return param;
+    }
+}`
+            }]
         };
+
+        console.log('handleOverloadStatic returning:', explanation);
+        return explanation;
     }
     
     private handleDuplicateImplementation(errorMessage: string): ErrorExplanation {
