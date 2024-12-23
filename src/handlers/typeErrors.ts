@@ -67,7 +67,7 @@ export class TypeErrorHandler implements ErrorHandler {
                 return this.handleTypeNotArray(errorMessage);
             case 2493: // Tuple type has no element at index
                 return this.handleTupleIndexOutOfBounds(errorMessage);
-                case 2349: // This expression is not callable
+            case 2349: // This expression is not callable
                 return this.handleNotCallable(errorMessage);
             case 2367: // This comparison appears to be unintentional
                 return this.handleUnintentionalComparison(errorMessage);
@@ -87,11 +87,344 @@ export class TypeErrorHandler implements ErrorHandler {
                 return this.handleMissingArguments(errorMessage);
             case 2571: // Object is of type 'unknown'
                 return this.handleUnknownType();
+            case 2693: // Type instantiation is excessively deep
+                return this.handleExcessiveTypeDepth();
+            case 2532: // Object possibly undefined
+                return this.handlePossiblyUndefined(errorMessage);
+            case 2540: // Cannot assign to property as it is read-only
+                return this.handleReadOnlyAssignment(errorMessage);
+            case 2551: // Property does not exist on type (Did you mean?)
+                return this.handlePropertySuggestion(errorMessage);
+            case 2578: // Unused type parameter
+                return this.handleUnusedTypeParameter(errorMessage);
+            case 2739: // Type missing properties
+                return this.handleTypeMissingProperties(errorMessage);
+            case 2749: // Interface not correctly implemented
+                return this.handleInterfaceNotImplemented(errorMessage);
+            case 2402: // Async function lacks return type annotation
+                return this.handleAsyncReturnType();
+            case 2515: // Abstract member not implemented
+                return this.handleAbstractMemberNotImplemented(errorMessage);    
             default:
                 return explanation;
         }
     }
-
+    private handleExcessiveTypeDepth(): ErrorExplanation {
+        return {
+            title: '타입 인스턴스화 깊이가 너무 깊음',
+            description: '타입의 중첩 깊이가 TypeScript의 제한을 초과했습니다.',
+            solutions: [
+                {
+                    title: '타입 중첩 깊이 제한',
+                    code: `// 깊이를 제한한 재귀적 타입 정의
+    type RecursiveType<T, D extends number = 5> = D extends 0 
+        ? T 
+        : { 
+            value: T; 
+            next?: RecursiveType<T, [-1, 0, 1, 2, 3, 4][D]> 
+        };
+    
+    // 사용 예시
+    type LimitedLinkedList = RecursiveType<string>;`
+                },
+                {
+                    title: '인터페이스로 변경',
+                    code: `// 재귀적 타입 대신 인터페이스 사용
+    interface Node<T> {
+        value: T;
+        next?: Node<T>;
+    }
+    
+    // 또는 타입 단순화
+    type SimpleNode = {
+        value: any;
+        children?: SimpleNode[];
+    };`
+                },
+                {
+                    title: '타입 구조 평탄화',
+                    code: `// 중첩된 구조를 평탄화
+    type FlattenedType = {
+        value: string;
+        level1?: string;
+        level2?: string;
+        level3?: string;
+        // 필요한 만큼만 정의
+    };`
+                }
+            ]
+        };
+    }
+    
+    private handlePossiblyUndefined(errorMessage: string): ErrorExplanation {
+        const objectName = errorMessage.match(/Object is possibly '([^']+)'/)?.[1] || 'undefined';
+        const propertyName = errorMessage.match(/property '([^']+)'/)?.[1] || 'property';
+        
+        return {
+            title: '객체가 undefined일 수 있음',
+            description: `객체가 '${objectName}'일 수 있어서 안전하지 않은 접근입니다.`,
+            solutions: [
+                {
+                    title: '옵셔널 체이닝 사용',
+                    code: `// 안전한 속성 접근
+    const value = object?.${propertyName};
+    
+    // 안전한 메서드 호출
+    const result = object?.method?.();
+    
+    // 기본값과 함께 사용
+    const safeValue = object?.${propertyName} ?? defaultValue;`
+                },
+                {
+                    title: 'null 체크 추가',
+                    code: `if (object !== undefined && object !== null) {
+        // 안전하게 객체 사용
+        const value = object.${propertyName};
+        // ...
+    }`
+                },
+                {
+                    title: 'Type Guard 사용',
+                    code: `function isDefined<T>(value: T | undefined | null): value is T {
+        return value !== undefined && value !== null;
+    }
+    
+    if (isDefined(object)) {
+        // 이 블록 안에서는 object가 undefined/null이 아님이 보장됨
+        const value = object.${propertyName};
+    }`
+                },
+                {
+                    title: '초기값 보장',
+                    code: `// 객체 생성 시점에 초기화 보장
+    const object = {
+        ${propertyName}: initialValue
+    };
+    
+    // 또는 생성자에서 초기화
+    class Example {
+        private ${propertyName}: string;
+        
+        constructor() {
+            this.${propertyName} = "초기값";
+        }
+    }`
+                }
+            ]
+        };
+    }
+    private handleReadOnlyAssignment(errorMessage: string): ErrorExplanation {
+        const propertyName = errorMessage.match(/property '([^']+)'/)?.[1] || 'property';
+        
+        return {
+            title: '읽기 전용 속성에 할당 시도',
+            description: `'${propertyName}' 속성은 읽기 전용이므로 값을 할당할 수 없습니다.`,
+            solutions: [
+                {
+                    title: '읽기 전용 속성 대신 새 객체 생성',
+                    code: `// 기존 객체를 수정하는 대신 새 객체 생성
+    const newObject = {
+        ...originalObject,
+        ${propertyName}: newValue
+    };`
+                },
+                {
+                    title: 'readonly 제거 고려',
+                    code: `interface MutableInterface {
+        // readonly 제거
+        ${propertyName}: string;
+    }`
+                },
+                {
+                    title: '초기화 시점에만 할당',
+                    code: `class Example {
+        readonly ${propertyName}: string;
+    
+        constructor(value: string) {
+            // 생성자에서는 readonly 속성에 할당 가능
+            this.${propertyName} = value;
+        }
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handlePropertySuggestion(errorMessage: string): ErrorExplanation {
+        const propertyName = errorMessage.match(/property '([^']+)'/)?.[1] || 'property';
+        const suggestion = errorMessage.match(/Did you mean '([^']+)'/)?.[1];
+        
+        return {
+            title: '존재하지 않는 속성 접근',
+            description: `'${propertyName}' 속성이 존재하지 않습니다.${suggestion ? ` '${suggestion}'를 의도하셨나요?` : ''}`,
+            solutions: [
+                {
+                    title: '제안된 속성 사용',
+                    code: `// 잘못된 속성 이름 사용
+    object.${propertyName};
+    
+    // 올바른 속성 이름 사용
+    object.${suggestion || 'correctPropertyName'};`
+                },
+                {
+                    title: '속성 추가',
+                    code: `interface ExtendedType {
+        ${propertyName}: string; // 필요한 속성 추가
+    }`
+                },
+                {
+                    title: '타입 가드 사용',
+                    code: `interface HasProperty {
+        ${propertyName}: string;
+    }
+    
+    function hasProperty(obj: any): obj is HasProperty {
+        return '${propertyName}' in obj;
+    }
+    
+    if (hasProperty(object)) {
+        console.log(object.${propertyName});
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleUnusedTypeParameter(errorMessage: string): ErrorExplanation {
+        const parameterName = errorMessage.match(/Type parameter '([^']+)'/)?.[1] || 'T';
+        
+        return {
+            title: '사용되지 않은 타입 매개변수',
+            description: `타입 매개변수 '${parameterName}'가 사용되지 않았습니다.`,
+            solutions: [
+                {
+                    title: '타입 매개변수 사용',
+                    code: `// 타입 매개변수 활용
+    interface Container<${parameterName}> {
+        value: ${parameterName};  // ${parameterName} 사용
+        transform(func: (value: ${parameterName}) => ${parameterName}): void;
+    }`
+                },
+                {
+                    title: '불필요한 타입 매개변수 제거',
+                    code: `// 필요없는 타입 매개변수 제거
+    interface SimpleContainer {
+        value: string;
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleTypeMissingProperties(errorMessage: string): ErrorExplanation {
+        const missingProps = errorMessage.match(/Property '([^']+)'/g)?.map(m => m.match(/'([^']+)'/)![1]) || [];
+        
+        return {
+            title: '타입에 필수 속성이 누락됨',
+            description: `타입에 필수적인 속성이 누락되었습니다: ${missingProps.join(', ')}`,
+            solutions: [
+                {
+                    title: '누락된 속성 추가',
+                    code: `interface CompleteType {
+        ${missingProps.map(prop => `${prop}: any;`).join('\n    ')}
+        // 기존 속성들...
+    }`
+                },
+                {
+                    title: '속성을 선택적으로 만들기',
+                    code: `interface FlexibleType {
+        ${missingProps.map(prop => `${prop}?: any;`).join('\n    ')}
+        // 기존 속성들...
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleInterfaceNotImplemented(errorMessage: string): ErrorExplanation {
+        const interfaceName = errorMessage.match(/interface '([^']+)'/)?.[1] || 'Interface';
+        const className = errorMessage.match(/class '([^']+)'/)?.[1] || 'Class';
+        
+        return {
+            title: '인터페이스가 올바르게 구현되지 않음',
+            description: `'${className}' 클래스가 '${interfaceName}' 인터페이스를 올바르게 구현하지 않았습니다.`,
+            solutions: [
+                {
+                    title: '누락된 구현 추가',
+                    code: `class ${className} implements ${interfaceName} {
+        // 필수 속성 구현
+        requiredProperty: string = "";
+    
+        // 필수 메서드 구현
+        requiredMethod(): void {
+            // 구현 내용
+        }
+    }`
+                },
+                {
+                    title: '부분 구현을 위한 추상 클래스 사용',
+                    code: `abstract class Partial${className} implements ${interfaceName} {
+        // 공통 구현
+        commonProperty: string = "";
+    
+        // 하위 클래스에서 구현할 추상 메서드
+        abstract abstractMethod(): void;
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleAsyncReturnType(): ErrorExplanation {
+        return {
+            title: '비동기 함수의 반환 타입 주석 누락',
+            description: 'async 함수의 반환 타입이 명시되지 않았습니다.',
+            solutions: [
+                {
+                    title: '명시적 반환 타입 추가',
+                    code: `async function fetchData(): Promise<Data> {
+        const response = await fetch(url);
+        return response.json();
+    }`
+                },
+                {
+                    title: '제네릭 타입 사용',
+                    code: `async function fetchItems<T>(): Promise<T[]> {
+        const response = await fetch(url);
+        return response.json();
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleAbstractMemberNotImplemented(errorMessage: string): ErrorExplanation {
+        const memberName = errorMessage.match(/member '([^']+)'/)?.[1] || 'member';
+        const className = errorMessage.match(/class '([^']+)'/)?.[1] || 'Class';
+        
+        return {
+            title: '추상 멤버가 구현되지 않음',
+            description: `'${className}' 클래스에서 추상 멤버 '${memberName}'가 구현되지 않았습니다.`,
+            solutions: [
+                {
+                    title: '추상 멤버 구현',
+                    code: `class ${className} extends AbstractClass {
+        ${memberName}(): void {
+            // 구현 내용 추가
+            throw new Error("Method not implemented.");
+        }
+    }`
+                },
+                {
+                    title: '클래스를 추상 클래스로 변경',
+                    code: `abstract class ${className} extends AbstractClass {
+        // 추상 멤버로 유지
+        abstract ${memberName}(): void;
+    }`
+                }
+            ]
+        };
+    }
     private handleDuplicateIdentifier(errorMessage: string): ErrorExplanation {
         const duplicateIdentifier = errorMessage.match(/'([^']+)'/)?.[1] || 'unknown';
         return {
