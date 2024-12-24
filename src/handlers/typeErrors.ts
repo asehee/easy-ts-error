@@ -12,7 +12,7 @@ export class TypeErrorHandler implements ErrorHandler {
     handle(diagnostic: vscode.Diagnostic): ErrorExplanation {
 
         console.log('TypeErrorHandler.handle called with diagnostic:', diagnostic);
-        
+
         const errorCode = diagnostic.code as number;
         const errorMessage = diagnostic.message;
         console.log('Processing error code:', errorCode);
@@ -25,34 +25,40 @@ export class TypeErrorHandler implements ErrorHandler {
         };
 
         switch (errorCode) {
-            case 2300:
+            case 2300: // Duplicate identifier
                 return this.handleDuplicateIdentifier(errorMessage);
-            case 2304:
+            case 2304: // Cannot find name
                 return this.handleCannotFindName(errorMessage);
-            case 2314:
+            case 2314: // Generic type error
                 return this.handleGenericTypeError(errorMessage);
-            case 2322:
+            case 2322: // Type not assignable
                 return this.handleTypeNotAssignable(errorMessage);
-            case 2589:
-                return this.handleInfiniteTypeRecursion();
-            case 2741:
-                return this.handleMissingProperty(errorMessage);
-            case 2345:
-                return this.handleArgumentTypeError(errorMessage);
             case 2339: // Property does not exist on type
                 return this.handlePropertyNotExist(errorMessage);
+            case 2345: // Argument type error
+                return this.handleArgumentTypeError(errorMessage);
+            case 2349: // This expression is not callable
+                return this.handleNotCallable(errorMessage);
             case 2352: // Type conversion may be a mistake
                 return this.handlePossibleTypeConversionMistake(errorMessage);
             case 2355: // Function must return a value
                 return this.handleFunctionMustReturn(errorMessage);
             case 2366: // Function lacks return statement
                 return this.handleFunctionLacksReturn(errorMessage);
+            case 2367: // This comparison appears to be unintentional
+                return this.handleUnintentionalComparison(errorMessage);
             case 2384: // Overload signatures must all be ambient or non-ambient
                 return this.handleOverloadSignatureAmbient(errorMessage);
+            case 2387: // Function overload must not be static
+                return this.handleOverloadStatic(diagnostic);
             case 2391: // Function implementation is missing
                 return this.handleFunctionImplementationMissing(errorMessage);
+            case 2393: // Duplicate function implementation
+                return this.handleDuplicateImplementation(errorMessage);
             case 2394: // Overload signature is not compatible
                 return this.handleOverloadSignatureIncompatible(errorMessage);
+            case 2402: // Async function lacks return type annotation
+                return this.handleAsyncReturnType();
             case 2416: // Property is not assignable to same property in base type
                 return this.handlePropertyNotAssignableToBase(errorMessage);
             case 2420: // Class incorrectly implements interface
@@ -61,53 +67,479 @@ export class TypeErrorHandler implements ErrorHandler {
                 return this.handleTypeParametersMustMatch(errorMessage);
             case 2448: // Block-scoped variable used before declaration
                 return this.handleVariableUsedBeforeDeclaration(errorMessage);
-            case 2454: // Variable used before being assigned
-                return this.handleVariableUsedBeforeAssignment(errorMessage);
-            case 2461: // Type is not an array type
-                return this.handleTypeNotArray(errorMessage);
-            case 2493: // Tuple type has no element at index
-                return this.handleTupleIndexOutOfBounds(errorMessage);
-            case 2349: // This expression is not callable
-                return this.handleNotCallable(errorMessage);
-            case 2367: // This comparison appears to be unintentional
-                return this.handleUnintentionalComparison(errorMessage);
-            case 2387: // Function overload must not be static
-                return this.handleOverloadStatic(diagnostic);
-            case 2393: // Duplicate function implementation
-                return this.handleDuplicateImplementation(errorMessage);
             case 2451: // Cannot redeclare block-scoped variable
                 return this.handleBlockScopedRedeclaration(errorMessage);
+            case 2454: // Variable used before being assigned
+                return this.handleVariableUsedBeforeAssignment(errorMessage);
             case 2456: // Type alias circularly references itself
                 return this.handleCircularTypeAlias();
+            case 2461: // Type is not an array type
+                return this.handleTypeNotArray(errorMessage);
             case 2462: // A rest element must be last in a destructuring pattern
                 return this.handleRestElementLast();
             case 2487: // The left-hand side of a for...of statement cannot use a type annotation
                 return this.handleForOfTypeAnnotation();
-            case 2554: // Expected arguments, but got none
-                return this.handleMissingArguments(errorMessage);
-            case 2571: // Object is of type 'unknown'
-                return this.handleUnknownType();
-            case 2693: // Type instantiation is excessively deep
-                return this.handleExcessiveTypeDepth();
+            case 2493: // Tuple type has no element at index
+                return this.handleTupleIndexOutOfBounds(errorMessage);
+            case 2515: // Abstract member not implemented
+                return this.handleAbstractMemberNotImplemented(errorMessage);
             case 2532: // Object possibly undefined
                 return this.handlePossiblyUndefined(errorMessage);
             case 2540: // Cannot assign to property as it is read-only
                 return this.handleReadOnlyAssignment(errorMessage);
             case 2551: // Property does not exist on type (Did you mean?)
                 return this.handlePropertySuggestion(errorMessage);
+            case 2554: // Expected arguments, but got none
+                return this.handleMissingArguments(errorMessage);
+            case 2571: // Object is of type 'unknown'
+                return this.handleUnknownType();
             case 2578: // Unused type parameter
                 return this.handleUnusedTypeParameter(errorMessage);
+            case 2589: // Type recursion
+                return this.handleInfiniteTypeRecursion();
+            case 2693: // Type instantiation is excessively deep
+                return this.handleExcessiveTypeDepth();
             case 2739: // Type missing properties
                 return this.handleTypeMissingProperties(errorMessage);
+            case 2741: // Missing property
+                return this.handleMissingProperty(errorMessage);
             case 2749: // Interface not correctly implemented
                 return this.handleInterfaceNotImplemented(errorMessage);
-            case 2402: // Async function lacks return type annotation
-                return this.handleAsyncReturnType();
-            case 2515: // Abstract member not implemented
-                return this.handleAbstractMemberNotImplemented(errorMessage);    
+            case 2307: // Cannot find module
+                return this.handleCannotFindModule(errorMessage);
+            case 2339: // Property does not exist on type
+                return this.handlePropertyNotExist(errorMessage);
+            case 2344: // Type does not implement interface
+                return this.handleTypeNotImplementInterface(errorMessage);
+            case 2345: // Argument type error
+                return this.handleArgumentTypeError(errorMessage);
+            case 2348: // Value of type X is not callable
+                return this.handleValueNotCallable(errorMessage);
+            case 2349: // This expression is not callable
+                return this.handleNotCallable(errorMessage);
+            case 2351: // Cannot use JSX unless '--jsx' flag is provided
+                return this.handleJsxFlagMissing(errorMessage);
+            case 2352: // Type conversion may be a mistake
+                return this.handlePossibleTypeConversionMistake(errorMessage);
+            case 2362: // The left-hand side of an arithmetic operation must be a number or enum type
+                return this.handleArithmeticOperandType(errorMessage);
+            case 2365: // Operator cannot be applied to types
+                return this.handleInvalidOperatorUsage(errorMessage);
+            case 2374: // Duplicate number index signature
+                return this.handleDuplicateIndexSignature(errorMessage);
+            case 2430: // Interface with multiple call signatures
+                return this.handleMultipleCallSignatures(errorMessage);
+            case 2432: // Object is possibly 'null'
+                return this.handlePossiblyNull(errorMessage);
+            case 2445: // Property is missing in type but required in type
+                return this.handleMissingRequiredProperty(errorMessage);
+            case 2459: // Type decorator can only be used in TypeScript files
+                return this.handleTypeDecoratorUsage(errorMessage);
+            case 2468: // Cannot find global type
+                return this.handleCannotFindGlobalType(errorMessage);
+            case 2496: // The 'this' context of type X is not assignable to method's 'this' of type Y
+                return this.handleThisContextMismatch(errorMessage);
+            case 2538:
+                return this.handleInvalidIndexType(errorMessage)
+            case 2580:
+                return this.handleRequireTypeDefinitions(errorMessage)
+            case 2588:
+                return this.handleConstantReassignment(errorMessage)
             default:
                 return explanation;
         }
+    }
+    private handleInvalidIndexType(errorMessage: string): ErrorExplanation {
+        const invalidType = errorMessage.match(/Type '([^']+)'/)?.[1] || '{}';
+        
+        return {
+            title: '잘못된 인덱스 타입 사용',
+            description: `'${invalidType}' 타입은 인덱스 타입으로 사용할 수 없습니다. TypeScript에서는 string, number, 또는 Symbol 타입만 객체의 인덱스로 사용할 수 있습니다.`,
+            solutions: [
+                {
+                    title: '문자열 키 사용',
+                    code: `// 잘못된 사용
+    const key = {};
+    const obj = { prop: "value" };
+    obj[key];  // 에러!
+    
+    // 올바른 사용 - 문자열 키
+    const stringKey = "prop";
+    obj[stringKey];  // OK
+    
+    // 또는 직접 속성 접근
+    obj.prop;  // OK`
+                },
+                {
+                    title: '숫자 키 사용',
+                    code: `// 배열이나 튜플의 경우
+    const arr = ["a", "b", "c"];
+    const index = 0;
+    arr[index];  // OK
+    
+    // 숫자 인덱스 시그니처
+    interface NumberIndexed {
+        [index: number]: string;
+    }`
+                },
+                {
+                    title: 'Symbol 키 사용',
+                    code: `// Symbol을 키로 사용
+    const symbolKey = Symbol('key');
+    const obj = {
+        [symbolKey]: "value"
+    };
+    obj[symbolKey];  // OK`
+                },
+                {
+                    title: 'Map 사용',
+                    code: `// 객체를 키로 사용해야 하는 경우 Map 사용
+    const key = { id: 1 };
+    const map = new Map();
+    map.set(key, "value");
+    map.get(key);  // OK`
+                }
+            ]
+        };
+    }
+    private handleConstantReassignment(errorMessage: string): ErrorExplanation {
+        const variableName = errorMessage.match(/Cannot assign to '([^']+)'/)?.[1] || 'variable';
+    
+        return {
+            title: '상수 재할당 시도',
+            description: `'${variableName}'은 const로 선언되어 재할당할 수 없습니다.`,
+            solutions: [
+                {
+                    title: 'let 키워드 사용',
+                    code: `// const 대신 let 사용
+    let ${variableName} = initialValue;
+    ${variableName} = newValue; // 이제 재할당 가능`
+                },
+                {
+                    title: '객체인 경우 속성 수정',
+                    code: `const ${variableName} = { prop: "value" };
+    // 객체 자체는 변경할 수 없지만 속성은 변경 가능
+    ${variableName}.prop = "new value";
+    
+    // 또는 새 객체로 전개
+    const updated${variableName} = { ...${variableName}, prop: "new value" };`
+                },
+                {
+                    title: '배열인 경우 메서드 사용',
+                    code: `const ${variableName} = ["initial"];
+    // 배열 자체는 변경할 수 없지만 내용은 변경 가능
+    ${variableName}.push("new item");
+    ${variableName}[0] = "updated item";
+    
+    // 또는 새 배열로 전개
+    const new${variableName} = [...${variableName}, "new item"];`
+                }
+            ]
+        };
+    }
+    private handleCannotFindModule(errorMessage: string): ErrorExplanation {
+        const moduleName = errorMessage.match(/Cannot find module '([^']+)'/)?.[1] || 'unknown';
+        return {
+            title: '모듈을 찾을 수 없음',
+            description: `'${moduleName}' 모듈을 찾을 수 없습니다.`,
+            solutions: [
+                {
+                    title: '모듈 설치',
+                    code: `npm install ${moduleName}
+
+// 타입 정의가 필요한 경우
+npm install --save-dev @types/${moduleName}`
+                },
+                {
+                    title: '모듈 경로 확인',
+                    code: `// 상대 경로 확인
+import { something } from './${moduleName}';
+// 또는
+import { something } from '../${moduleName}';`
+                }
+            ]
+        };
+    }
+
+    private handleTypeNotImplementInterface(errorMessage: string): ErrorExplanation {
+        const type = errorMessage.match(/Type '([^']+)'/)?.[1];
+        const interfaceName = errorMessage.match(/interface '([^']+)'/)?.[1];
+
+        return {
+            title: '인터페이스 구현 누락',
+            description: `'${type}' 타입이 '${interfaceName}' 인터페이스를 구현하지 않았습니다.`,
+            solutions: [
+                {
+                    title: '누락된 인터페이스 멤버 구현',
+                    code: `interface ${interfaceName} {
+    property: string;
+    method(): void;
+}
+
+class ${type} implements ${interfaceName} {
+    property: string = "value";
+    method(): void {
+        // 구현
+    }
+}`
+                }
+            ]
+        };
+    }
+
+    private handleValueNotCallable(errorMessage: string): ErrorExplanation {
+        const type = errorMessage.match(/Value of type '([^']+)'/)?.[1] || 'Type';
+
+        return {
+            title: '호출할 수 없는 값',
+            description: `'${type}' 타입의 값은 호출할 수 없습니다.`,
+            solutions: [
+                {
+                    title: '함수 타입으로 선언',
+                    code: `// 잘못된 사용
+const value: ${type} = "not a function";
+value(); // 에러!
+
+// 올바른 사용
+const value: () => void = () => {
+    // 함수 구현
+};
+value(); // 정상 동작`
+                }
+            ]
+        };
+    }
+
+    private handleJsxFlagMissing(errorMessage: string): ErrorExplanation {
+        return {
+            title: 'JSX 플래그 누락',
+            description: 'JSX를 사용하기 위해서는 --jsx 컴파일러 플래그가 필요합니다.',
+            solutions: [
+                {
+                    title: 'tsconfig.json 설정',
+                    code: `{
+    "compilerOptions": {
+        "jsx": "react",
+        // 또는
+        "jsx": "react-jsx"
+    }
+}`
+                },
+                {
+                    title: '명령줄 옵션',
+                    code: `tsc --jsx react`
+                }
+            ]
+        };
+    }
+
+    private handleArithmeticOperandType(errorMessage: string): ErrorExplanation {
+        return {
+            title: '잘못된 산술 연산자 사용',
+            description: '산술 연산의 피연산자는 숫자나 열거형 타입이어야 합니다.',
+            solutions: [
+                {
+                    title: '숫자로 변환',
+                    code: `// 잘못된 사용
+const result = "123" + 456; // 문자열 연결
+
+// 올바른 사용
+const result = Number("123") + 456; // 산술 연산
+// 또는
+const result = parseInt("123") + 456;`
+                }
+            ]
+        };
+    }
+
+    private handleInvalidOperatorUsage(errorMessage: string): ErrorExplanation {
+        const operator = errorMessage.match(/operator '([^']+)'/)?.[1] || 'operator';
+
+        return {
+            title: '연산자 사용 불가',
+            description: `이 타입들에는 '${operator}' 연산자를 사용할 수 없습니다.`,
+            solutions: [
+                {
+                    title: '타입 변환 후 연산',
+                    code: `// 잘못된 사용
+const result = value1 ${operator} value2;
+
+// 올바른 사용
+const num1 = Number(value1);
+const num2 = Number(value2);
+const result = num1 ${operator} num2;`
+                }
+            ]
+        };
+    }
+
+    private handleDuplicateIndexSignature(errorMessage: string): ErrorExplanation {
+        return {
+            title: '중복된 인덱스 시그니처',
+            description: '숫자 인덱스 시그니처가 중복 정의되었습니다.',
+            solutions: [
+                {
+                    title: '단일 인덱스 시그니처 사용',
+                    code: `// 잘못된 정의
+interface Wrong {
+    [index: number]: string;
+    [x: number]: string;  // 중복!
+}
+
+// 올바른 정의
+interface Correct {
+    [index: number]: string;
+}`
+                }
+            ]
+        };
+    }
+
+    private handleMultipleCallSignatures(errorMessage: string): ErrorExplanation {
+        return {
+            title: '다중 호출 시그니처',
+            description: '인터페이스에 여러 호출 시그니처가 정의되었습니다.',
+            solutions: [
+                {
+                    title: '오버로드 사용',
+                    code: `interface Callable {
+    (arg: string): string;
+    (arg: number): number;
+}
+
+const implementation: Callable = (arg: string | number): string | number => {
+    return typeof arg === "string" ? arg : arg.toString();
+};`
+                }
+            ]
+        };
+    }
+
+    private handlePossiblyNull(errorMessage: string): ErrorExplanation {
+        const propertyName = errorMessage.match(/property '([^']+)'/)?.[1] || 'property';
+
+        return {
+            title: '널 가능성 있는 객체 접근',
+            description: '객체가 null일 수 있어 안전하지 않은 접근입니다.',
+            solutions: [
+                {
+                    title: 'null 체크 추가',
+                    code: `if (object !== null) {
+    object.${propertyName}; // 안전한 접근
+}`
+                },
+                {
+                    title: '옵셔널 체이닝 사용',
+                    code: `const value = object?.${propertyName};`
+                },
+                {
+                    title: 'Null 아님 단언 (확실한 경우만)',
+                    code: `const value = object!.${propertyName};`
+                }
+            ]
+        };
+    }
+
+    private handleMissingRequiredProperty(errorMessage: string): ErrorExplanation {
+        const propertyName = errorMessage.match(/Property '([^']+)'/)?.[1] || 'property';
+
+        return {
+            title: '필수 속성 누락',
+            description: `'${propertyName}' 속성이 필수지만 구현에서 누락되었습니다.`,
+            solutions: [
+                {
+                    title: '필수 속성 추가',
+                    code: `interface Required {
+    ${propertyName}: string;
+}
+
+const implementation: Required = {
+    ${propertyName}: "value"  // 필수 속성 추가
+};`
+                }
+            ]
+        };
+    }
+
+    private handleTypeDecoratorUsage(errorMessage: string): ErrorExplanation {
+        return {
+            title: '타입 데코레이터 사용 제한',
+            description: '타입 데코레이터는 TypeScript 파일에서만 사용할 수 있습니다.',
+            solutions: [
+                {
+                    title: '파일 확장자 변경',
+                    code: `// 파일 이름을 .ts 또는 .tsx로 변경
+// example.js → example.ts`
+                },
+                {
+                    title: 'tsconfig.json 설정',
+                    code: `{
+    "compilerOptions": {
+        "experimentalDecorators": true
+    }
+}`
+                }
+            ]
+        };
+    }
+
+    private handleCannotFindGlobalType(errorMessage: string): ErrorExplanation {
+        const typeName = errorMessage.match(/Cannot find global type '([^']+)'/)?.[1] || 'Type';
+
+        return {
+            title: '전역 타입 찾을 수 없음',
+            description: `'${typeName}' 전역 타입을 찾을 수 없습니다.`,
+            solutions: [
+                {
+                    title: '타입 정의 설치',
+                    code: `npm install --save-dev @types/node
+// 또는 필요한 다른 타입 정의 패키지`
+                },
+                {
+                    title: '전역 타입 선언',
+                    code: `// 전역 타입 선언 추가
+declare global {
+    type ${typeName} = {
+        // 타입 정의
+    }
+}`
+                }
+            ]
+        };
+    }
+
+    private handleThisContextMismatch(errorMessage: string): ErrorExplanation {
+        const expected = errorMessage.match(/of type '([^']+)'/)?.[1] || 'expected type';
+        const actual = errorMessage.match(/context of type '([^']+)'/)?.[1] || 'actual type';
+
+        return {
+            title: 'this 컨텍스트 불일치',
+            description: `메서드의 'this' 타입이 불일치합니다. 예상: ${expected}, 실제: ${actual}`,
+            solutions: [
+                {
+                    title: '화살표 함수 사용',
+                    code: `class Example {
+    value = "test";
+    method = () => {
+        // 화살표 함수로 this 바인딩 유지
+        console.log(this.value);
+    }
+}`
+                },
+                {
+                    title: 'bind 사용',
+                    code: `class Example {
+    constructor() {
+        this.method = this.method.bind(this);
+    }
+    
+    method() {
+        // this가 올바르게 바인딩됨
+    }
+}`
+                }
+            ]
+        };
     }
     private handleExcessiveTypeDepth(): ErrorExplanation {
         return {
@@ -155,11 +587,11 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handlePossiblyUndefined(errorMessage: string): ErrorExplanation {
         const objectName = errorMessage.match(/Object is possibly '([^']+)'/)?.[1] || 'undefined';
         const propertyName = errorMessage.match(/property '([^']+)'/)?.[1] || 'property';
-        
+
         return {
             title: '객체가 undefined일 수 있음',
             description: `객체가 '${objectName}'일 수 있어서 안전하지 않은 접근입니다.`,
@@ -215,7 +647,7 @@ export class TypeErrorHandler implements ErrorHandler {
     }
     private handleReadOnlyAssignment(errorMessage: string): ErrorExplanation {
         const propertyName = errorMessage.match(/property '([^']+)'/)?.[1] || 'property';
-        
+
         return {
             title: '읽기 전용 속성에 할당 시도',
             description: `'${propertyName}' 속성은 읽기 전용이므로 값을 할당할 수 없습니다.`,
@@ -249,11 +681,11 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handlePropertySuggestion(errorMessage: string): ErrorExplanation {
         const propertyName = errorMessage.match(/property '([^']+)'/)?.[1] || 'property';
         const suggestion = errorMessage.match(/Did you mean '([^']+)'/)?.[1];
-        
+
         return {
             title: '존재하지 않는 속성 접근',
             description: `'${propertyName}' 속성이 존재하지 않습니다.${suggestion ? ` '${suggestion}'를 의도하셨나요?` : ''}`,
@@ -289,10 +721,10 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleUnusedTypeParameter(errorMessage: string): ErrorExplanation {
         const parameterName = errorMessage.match(/Type parameter '([^']+)'/)?.[1] || 'T';
-        
+
         return {
             title: '사용되지 않은 타입 매개변수',
             description: `타입 매개변수 '${parameterName}'가 사용되지 않았습니다.`,
@@ -315,10 +747,10 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleTypeMissingProperties(errorMessage: string): ErrorExplanation {
         const missingProps = errorMessage.match(/Property '([^']+)'/g)?.map(m => m.match(/'([^']+)'/)![1]) || [];
-        
+
         return {
             title: '타입에 필수 속성이 누락됨',
             description: `타입에 필수적인 속성이 누락되었습니다: ${missingProps.join(', ')}`,
@@ -340,11 +772,11 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleInterfaceNotImplemented(errorMessage: string): ErrorExplanation {
         const interfaceName = errorMessage.match(/interface '([^']+)'/)?.[1] || 'Interface';
         const className = errorMessage.match(/class '([^']+)'/)?.[1] || 'Class';
-        
+
         return {
             title: '인터페이스가 올바르게 구현되지 않음',
             description: `'${className}' 클래스가 '${interfaceName}' 인터페이스를 올바르게 구현하지 않았습니다.`,
@@ -374,7 +806,7 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleAsyncReturnType(): ErrorExplanation {
         return {
             title: '비동기 함수의 반환 타입 주석 누락',
@@ -397,11 +829,11 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleAbstractMemberNotImplemented(errorMessage: string): ErrorExplanation {
         const memberName = errorMessage.match(/member '([^']+)'/)?.[1] || 'member';
         const className = errorMessage.match(/class '([^']+)'/)?.[1] || 'Class';
-        
+
         return {
             title: '추상 멤버가 구현되지 않음',
             description: `'${className}' 클래스에서 추상 멤버 '${memberName}'가 구현되지 않았습니다.`,
@@ -444,7 +876,7 @@ export class TypeErrorHandler implements ErrorHandler {
     }
     private handleNotCallable(errorMessage: string): ErrorExplanation {
         const expressionType = errorMessage.match(/Type '([^']+)'/)?.[1] || 'expression';
-        
+
         return {
             title: '호출할 수 없는 표현식',
             description: `타입이 '${expressionType}'인 표현식은 호출할 수 없습니다. 이 타입은 호출 시그니처를 가지고 있지 않습니다.`,
@@ -490,11 +922,11 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleUnintentionalComparison(errorMessage: string): ErrorExplanation {
         const type1 = errorMessage.match(/types '([^']+)'/)?.[1];
         const type2 = errorMessage.match(/and '([^']+)'/)?.[1];
-        
+
         return {
             title: '의도하지 않은 타입 비교',
             description: `'${type1}'와 '${type2}' 타입은 서로 겹치는 부분이 없어 비교가 의미가 없습니다.`,
@@ -519,10 +951,10 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleOverloadStatic(diagnostic: vscode.Diagnostic): ErrorExplanation {
         console.log('handleOverloadStatic called with diagnostic:', diagnostic);
-        
+
         const explanation: ErrorExplanation = {
             title: "Function overload must be static",
             description: "오버로드된 함수의 모든 시그니처는 일관되게 static이거나 non-static이어야 합니다.",
@@ -541,7 +973,7 @@ export class TypeErrorHandler implements ErrorHandler {
         console.log('handleOverloadStatic returning:', explanation);
         return explanation;
     }
-    
+
     private handleDuplicateImplementation(errorMessage: string): ErrorExplanation {
         return {
             title: '중복된 함수 구현',
@@ -570,7 +1002,7 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleBlockScopedRedeclaration(errorMessage: string): ErrorExplanation {
         const variableName = errorMessage.match(/'([^']+)'/)?.[1] || 'variable';
         return {
@@ -590,7 +1022,7 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleCircularTypeAlias(): ErrorExplanation {
         return {
             title: '순환 참조 타입 별칭',
@@ -616,7 +1048,7 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleRestElementLast(): ErrorExplanation {
         return {
             title: 'Rest 요소는 마지막에 위치해야 함',
@@ -633,7 +1065,7 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleForOfTypeAnnotation(): ErrorExplanation {
         return {
             title: 'for...of 문의 왼쪽에 타입 주석 사용 불가',
@@ -655,7 +1087,7 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleMissingArguments(errorMessage: string): ErrorExplanation {
         const expected = errorMessage.match(/Expected (\d+)/)?.[1] || '필요한';
         return {
@@ -682,7 +1114,7 @@ export class TypeErrorHandler implements ErrorHandler {
             ]
         };
     }
-    
+
     private handleUnknownType(): ErrorExplanation {
         return {
             title: 'unknown 타입 객체',
@@ -931,7 +1363,7 @@ if (converted === expected${type1}Value) {
     private handlePossibleTypeConversionMistake(errorMessage: string): ErrorExplanation {
         const sourceType = errorMessage.match(/type '([^']+)'/)?.[1];
         const targetType = errorMessage.match(/type '([^']+)'$/)?.[1];
-        
+
         return {
             title: '타입 변환이 실수일 수 있음',
             description: `'${sourceType}'에서 '${targetType}'으로의 변환이 의도하지 않은 것일 수 있습니다.`,
@@ -947,7 +1379,7 @@ if (converted === expected${type1}Value) {
             ]
         };
     }
-    
+
     private handleFunctionMustReturn(errorMessage: string): ErrorExplanation {
         return {
             title: '함수가 값을 반환해야 함',
@@ -964,7 +1396,7 @@ if (converted === expected${type1}Value) {
             ]
         };
     }
-    
+
     private handleFunctionLacksReturn(errorMessage: string): ErrorExplanation {
         return {
             title: '함수에 반환문이 없음',
@@ -1064,7 +1496,7 @@ if (converted === expected${type1}Value) {
     private handleClassImplementsInterface(errorMessage: string): ErrorExplanation {
         const className = errorMessage.match(/Class '([^']+)'/)?.[1] || 'Class';
         const interfaceName = errorMessage.match(/interface '([^']+)'/)?.[1] || 'Interface';
-    
+
         return {
             title: `클래스가 인터페이스를 잘못 구현함`,
             description: `'${className}' 클래스가 '${interfaceName}' 인터페이스를 올바르게 구현하지 않았습니다.`,
@@ -1096,10 +1528,10 @@ if (converted === expected${type1}Value) {
             ]
         };
     }
-    
+
     private handlePropertyNotAssignableToBase(errorMessage: string): ErrorExplanation {
         const propertyName = errorMessage.match(/Property '([^']+)'/)?.[1] || 'property';
-        
+
         return {
             title: '베이스 타입과 속성 타입 불일치',
             description: '파생 클래스의 속성이 베이스 클래스의 동일 속성과 타입이 일치하지 않습니다.',
@@ -1155,10 +1587,10 @@ if (converted === expected${type1}Value) {
             ]
         };
     }
-    
+
     private handleVariableUsedBeforeDeclaration(errorMessage: string): ErrorExplanation {
         const variableName = errorMessage.match(/variable '([^']+)'/)?.[1] || 'variable';
-    
+
         return {
             title: '선언 전 변수 사용',
             description: `블록 스코프 변수 '${variableName}'가 선언되기 전에 사용되었습니다.`,
@@ -1183,7 +1615,7 @@ if (converted === expected${type1}Value) {
     }
     private handleVariableUsedBeforeAssignment(errorMessage: string): ErrorExplanation {
         const variableName = errorMessage.match(/Variable '([^']+)'/)?.[1] || 'variable';
-    
+
         return {
             title: '할당 전 변수 사용',
             description: `변수 '${variableName}'가 값이 할당되기 전에 사용되었습니다.`,
@@ -1206,7 +1638,7 @@ if (converted === expected${type1}Value) {
     }
     private handleTypeNotArray(errorMessage: string): ErrorExplanation {
         const typeName = errorMessage.match(/type '([^']+)'/)?.[1] || 'Type';
-    
+
         return {
             title: '배열 타입이 아님',
             description: `'${typeName}' 타입은 배열 타입이 아닙니다.`,
@@ -1231,10 +1663,40 @@ if (converted === expected${type1}Value) {
             ]
         };
     }
+    private handleRequireTypeDefinitions(errorMessage: string): ErrorExplanation {
+        const typeName = errorMessage.match(/type definitions for ([^?]+)\?/)?.[1] || 'node';
+        
+        return {
+            title: 'require 함수를 찾을 수 없음',
+            description: `'require' 함수를 사용하기 위해서는 Node.js의 타입 정의가 필요합니다.`,
+            solutions: [
+                {
+                    title: 'Node.js 타입 정의 설치',
+                    code: `npm install --save-dev @types/node`
+                },
+                {
+                    title: 'import 문 사용',
+                    code: `// require 대신 import 문 사용
+    import * as module from 'module-name';
+    // 또는
+    import { specific } from 'module-name';`
+                },
+                {
+                    title: 'tsconfig.json에 types 추가',
+                    code: `{
+        "compilerOptions": {
+            "types": ["node"],
+            // 다른 설정들...
+        }
+    }`
+                }
+            ]
+        };
+    }
     private handleTupleIndexOutOfBounds(errorMessage: string): ErrorExplanation {
         const indexMatch = errorMessage.match(/index (\d+)/);
         const index = indexMatch ? indexMatch[1] : '?';
-    
+
         return {
             title: '튜플 인덱스 범위 초과',
             description: `튜플에서 존재하지 않는 인덱스 ${index}에 접근하려고 했습니다.`,
@@ -1254,5 +1716,5 @@ if (converted === expected${type1}Value) {
             ]
         };
     }
-    
+
 }
