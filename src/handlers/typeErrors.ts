@@ -1,7 +1,5 @@
-// src/handlers/typeErrors.ts
-
 import * as vscode from 'vscode';
-import { ErrorHandler, ErrorExplanation, Solution } from '../models/types';
+import { ErrorHandler, ErrorExplanation } from '../models/types';
 
 export class TypeErrorHandler implements ErrorHandler {
     canHandle(errorCode: number): boolean {
