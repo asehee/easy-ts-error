@@ -29,24 +29,38 @@ export class TypeErrorHandler implements ErrorHandler {
                 return this.handleDuplicateIdentifier(errorMessage);
             case 2304: // Cannot find name
                 return this.handleCannotFindName(errorMessage);
+            case 2307: // Cannot find module
+                return this.handleCannotFindModule(errorMessage);
             case 2314: // Generic type error
                 return this.handleGenericTypeError(errorMessage);
             case 2322: // Type not assignable
                 return this.handleTypeNotAssignable(errorMessage);
             case 2339: // Property does not exist on type
                 return this.handlePropertyNotExist(errorMessage);
+            case 2344: // Type does not implement interface
+                return this.handleTypeNotImplementInterface(errorMessage);
             case 2345: // Argument type error
                 return this.handleArgumentTypeError(errorMessage);
+            case 2348: // Value of type X is not callable
+                return this.handleValueNotCallable(errorMessage);
             case 2349: // This expression is not callable
                 return this.handleNotCallable(errorMessage);
+            case 2351: // Cannot use JSX unless '--jsx' flag is provided
+                return this.handleJsxFlagMissing(errorMessage);
             case 2352: // Type conversion may be a mistake
                 return this.handlePossibleTypeConversionMistake(errorMessage);
             case 2355: // Function must return a value
                 return this.handleFunctionMustReturn(errorMessage);
+            case 2362: // The left-hand side of an arithmetic operation must be a number or enum type
+                return this.handleArithmeticOperandType(errorMessage);
+            case 2365: // Operator cannot be applied to types
+                return this.handleInvalidOperatorUsage(errorMessage);
             case 2366: // Function lacks return statement
                 return this.handleFunctionLacksReturn(errorMessage);
             case 2367: // This comparison appears to be unintentional
                 return this.handleUnintentionalComparison(errorMessage);
+            case 2374: // Duplicate number index signature
+                return this.handleDuplicateIndexSignature(errorMessage);
             case 2384: // Overload signatures must all be ambient or non-ambient
                 return this.handleOverloadSignatureAmbient(errorMessage);
             case 2387: // Function overload must not be static
@@ -65,6 +79,12 @@ export class TypeErrorHandler implements ErrorHandler {
                 return this.handleClassImplementsInterface(errorMessage);
             case 2428: // All declarations must have identical type parameters
                 return this.handleTypeParametersMustMatch(errorMessage);
+            case 2430: // Interface with multiple call signatures
+                return this.handleMultipleCallSignatures(errorMessage);
+            case 2432: // Object is possibly 'null'
+                return this.handlePossiblyNull(errorMessage);
+            case 2445: // Property is missing in type but required in type
+                return this.handleMissingRequiredProperty(errorMessage);
             case 2448: // Block-scoped variable used before declaration
                 return this.handleVariableUsedBeforeDeclaration(errorMessage);
             case 2451: // Cannot redeclare block-scoped variable
@@ -73,20 +93,40 @@ export class TypeErrorHandler implements ErrorHandler {
                 return this.handleVariableUsedBeforeAssignment(errorMessage);
             case 2456: // Type alias circularly references itself
                 return this.handleCircularTypeAlias();
+            case 2459: // Type decorator can only be used in TypeScript files
+                return this.handleTypeDecoratorUsage(errorMessage);
             case 2461: // Type is not an array type
                 return this.handleTypeNotArray(errorMessage);
             case 2462: // A rest element must be last in a destructuring pattern
                 return this.handleRestElementLast();
+            case 2463: // Cannot spread object of type 'never'
+                return this.handleNeverSpread(errorMessage);
+            case 2468: // Cannot find global type
+                return this.handleCannotFindGlobalType(errorMessage);
             case 2487: // The left-hand side of a for...of statement cannot use a type annotation
                 return this.handleForOfTypeAnnotation();
             case 2493: // Tuple type has no element at index
                 return this.handleTupleIndexOutOfBounds(errorMessage);
+            case 2496: // The 'this' context of type X is not assignable to method's 'this' of type Y
+                return this.handleThisContextMismatch(errorMessage);
             case 2515: // Abstract member not implemented
                 return this.handleAbstractMemberNotImplemented(errorMessage);
+            case 2531: // Object is possibly 'null' or 'undefined'
+                return this.handleNullableAccess(errorMessage);
             case 2532: // Object possibly undefined
                 return this.handlePossiblyUndefined(errorMessage);
+            case 2533: // Object is possibly 'undefined'
+                return this.handlePossiblyUndefinedAccess(errorMessage);
+            case 2536: // Type 'X' cannot be used to index type 'Y'
+                return this.handleInvalidTypeIndex(errorMessage);
+            case 2537: // Type 'X' cannot be used as an index type
+                return this.handleNonIndexType(errorMessage);
+            case 2538: // Type 'X' cannot be used as an index type
+                return this.handleInvalidIndexType(errorMessage);
             case 2540: // Cannot assign to property as it is read-only
                 return this.handleReadOnlyAssignment(errorMessage);
+            case 2542: // Index signature is missing
+                return this.handleMissingIndexSignature(errorMessage);
             case 2551: // Property does not exist on type (Did you mean?)
                 return this.handlePropertySuggestion(errorMessage);
             case 2554: // Expected arguments, but got none
@@ -95,59 +135,466 @@ export class TypeErrorHandler implements ErrorHandler {
                 return this.handleUnknownType();
             case 2578: // Unused type parameter
                 return this.handleUnusedTypeParameter(errorMessage);
+            case 2580: // Type definitions required
+                return this.handleRequireTypeDefinitions(errorMessage);
+            case 2588: // Cannot reassign constant
+                return this.handleConstantReassignment(errorMessage);
             case 2589: // Type recursion
                 return this.handleInfiniteTypeRecursion();
+            case 2590: // Expression produces a union type that is too complex to represent
+                return this.handleComplexUnionType(errorMessage);
+            case 2683: // 'this' implicitly has type 'any'
+                return this.handleImplicitThisType(errorMessage);
+            case 2686: // 'X' refers to a UMD global, but the current file is not a module
+                return this.handleUMDGlobalInNonModule(errorMessage);
+            case 2689: // Cannot extend an interface 'X'. Did you mean 'implements'?
+                return this.handleInterfaceExtensionError(errorMessage);
             case 2693: // Type instantiation is excessively deep
                 return this.handleExcessiveTypeDepth();
+            case 2701: // 'X' is not assignable to type 'Promise<T>'
+                return this.handleInvalidPromiseType(errorMessage);
             case 2739: // Type missing properties
                 return this.handleTypeMissingProperties(errorMessage);
             case 2741: // Missing property
                 return this.handleMissingProperty(errorMessage);
+            case 2742: // The inferred type cannot be named without a reference to 'X'
+                return this.handleCircularInference(errorMessage);
             case 2749: // Interface not correctly implemented
                 return this.handleInterfaceNotImplemented(errorMessage);
-            case 2307: // Cannot find module
-                return this.handleCannotFindModule(errorMessage);
-            case 2339: // Property does not exist on type
-                return this.handlePropertyNotExist(errorMessage);
-            case 2344: // Type does not implement interface
-                return this.handleTypeNotImplementInterface(errorMessage);
-            case 2345: // Argument type error
-                return this.handleArgumentTypeError(errorMessage);
-            case 2348: // Value of type X is not callable
-                return this.handleValueNotCallable(errorMessage);
-            case 2349: // This expression is not callable
-                return this.handleNotCallable(errorMessage);
-            case 2351: // Cannot use JSX unless '--jsx' flag is provided
-                return this.handleJsxFlagMissing(errorMessage);
-            case 2352: // Type conversion may be a mistake
-                return this.handlePossibleTypeConversionMistake(errorMessage);
-            case 2362: // The left-hand side of an arithmetic operation must be a number or enum type
-                return this.handleArithmeticOperandType(errorMessage);
-            case 2365: // Operator cannot be applied to types
-                return this.handleInvalidOperatorUsage(errorMessage);
-            case 2374: // Duplicate number index signature
-                return this.handleDuplicateIndexSignature(errorMessage);
-            case 2430: // Interface with multiple call signatures
-                return this.handleMultipleCallSignatures(errorMessage);
-            case 2432: // Object is possibly 'null'
-                return this.handlePossiblyNull(errorMessage);
-            case 2445: // Property is missing in type but required in type
-                return this.handleMissingRequiredProperty(errorMessage);
-            case 2459: // Type decorator can only be used in TypeScript files
-                return this.handleTypeDecoratorUsage(errorMessage);
-            case 2468: // Cannot find global type
-                return this.handleCannotFindGlobalType(errorMessage);
-            case 2496: // The 'this' context of type X is not assignable to method's 'this' of type Y
-                return this.handleThisContextMismatch(errorMessage);
-            case 2538:
-                return this.handleInvalidIndexType(errorMessage)
-            case 2580:
-                return this.handleRequireTypeDefinitions(errorMessage)
-            case 2588:
-                return this.handleConstantReassignment(errorMessage)
             default:
                 return explanation;
         }
+    }
+    private handleInvalidPromiseType(errorMessage: string): ErrorExplanation {
+        const typeMatch = errorMessage.match(/Type '([^']+)'/);
+        const invalidType = typeMatch ? typeMatch[1] : '반환된 타입';
+    
+        return {
+            title: '잘못된 Promise 타입',
+            description: `'${invalidType}'은(는) 기대하는 Promise 타입과 호환되지 않습니다.`,
+            solutions: [
+                {
+                    title: 'Promise 타입 명시',
+                    code: `// 잘못된 사용
+    async function wrong(): Promise<string> {
+        return 123;  // 에러!
+    }
+    
+    // 올바른 사용
+    async function correct(): Promise<string> {
+        return "문자열";  // OK
+    }`
+                },
+                {
+                    title: 'Promise.resolve 사용',
+                    code: `// 명시적 Promise 생성
+    function explicit(): Promise<string> {
+        return Promise.resolve("문자열");
+    }
+    
+    // 또는 async/await 사용
+    async function withAwait(): Promise<string> {
+        const result = await someAsyncOperation();
+        return result;
+    }
+    
+    // 제네릭 타입 사용
+    async function generic<T>(value: T): Promise<T> {
+        return value;
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleCircularInference(errorMessage: string): ErrorExplanation {
+        const typeMatch = errorMessage.match(/reference to '([^']+)'/);
+        const circularType = typeMatch ? typeMatch[1] : '타입';
+    
+        return {
+            title: '순환 참조 타입 추론',
+            description: `'${circularType}'에 대한 타입 추론 과정에서 순환 참조가 발생했습니다. 이는 보통 복잡한 제네릭 타입이나 재귀적 타입 정의에서 발생합니다.`,
+            solutions: [
+                {
+                    title: '명시적 타입 선언',
+                    code: `// 잘못된 사용 - 타입 추론에 의존
+    const circular = {
+        self: undefined as any
+    };
+    circular.self = circular;  // 순환 참조 발생
+    
+    // 올바른 사용 - 인터페이스 정의
+    interface Node {
+        self: Node | undefined;
+    }
+    const node: Node = {
+        self: undefined
+    };
+    node.self = node;  // OK`
+                },
+                {
+                    title: '타입 매개변수 사용',
+                    code: `// 제네릭을 사용한 해결
+    interface Container<T> {
+        value: T;
+        next?: Container<T>;
+    }
+    
+    const container: Container<string> = {
+        value: "first",
+        next: {
+            value: "second"
+        }
+    };`
+                },
+                {
+                    title: '타입 중단점 추가',
+                    code: `// 재귀적 타입에 중단점 추가
+    type RecursiveType<T> = {
+        value: T;
+        children: RecursiveType<T>[];
+    } | null;  // null을 중단점으로 사용
+    
+    const tree: RecursiveType<string> = {
+        value: "root",
+        children: []
+    };`
+                }
+            ]
+        };
+    }
+    private handleNeverSpread(errorMessage: string): ErrorExplanation {
+        return {
+            title: 'never 타입 spread 오류',
+            description: 'never 타입의 객체는 spread 연산자를 사용할 수 없습니다. 이는 보통 타입 추론 과정에서 객체가 never 타입으로 좁혀졌을 때 발생합니다.',
+            solutions: [
+                {
+                    title: '타입 명시',
+                    code: `// 잘못된 사용
+    const neverObj: never = /* ... */;
+    const spread = { ...neverObj };  // 에러!
+    
+    // 올바른 사용 - 구체적인 타입 지정
+    interface MyType {
+        prop: string;
+    }
+    const obj: MyType = { prop: "value" };
+    const spread = { ...obj };  // OK`
+                },
+                {
+                    title: '타입 가드 사용',
+                    code: `function process(value: string | never) {
+        if (typeof value === "string") {
+            const obj = { ...{ str: value } };  // OK
+        }
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleNullableAccess(errorMessage: string): ErrorExplanation {
+        const propertyMatch = errorMessage.match(/property '([^']+)'/);
+        const property = propertyMatch ? propertyMatch[1] : 'property';
+        
+        return {
+            title: 'Null 또는 Undefined 접근 오류',
+            description: `객체가 null 또는 undefined일 수 있는 상태에서 '${property}' 속성에 접근하려고 했습니다.`,
+            solutions: [
+                {
+                    title: '옵셔널 체이닝 사용',
+                    code: `// 잘못된 사용
+    const obj: { prop?: string } | null = null;
+    console.log(obj.prop);  // 에러!
+    
+    // 올바른 사용 - 옵셔널 체이닝
+    console.log(obj?.prop);  // OK (undefined)`
+                },
+                {
+                    title: '타입 가드 사용',
+                    code: `if (obj !== null && obj !== undefined) {
+        console.log(obj.prop);  // OK
+    }`
+                },
+                {
+                    title: '기본값 설정',
+                    code: `// Nullish 병합 연산자 사용
+    const value = obj ?? { prop: "기본값" };
+    console.log(value.prop);  // OK`
+                }
+            ]
+        };
+    }
+    
+    private handlePossiblyUndefinedAccess(errorMessage: string): ErrorExplanation {
+        const propertyMatch = errorMessage.match(/property '([^']+)'/);
+        const property = propertyMatch ? propertyMatch[1] : 'property';
+    
+        return {
+            title: 'Undefined 가능성 오류',
+            description: `'${property}' 속성이 undefined일 수 있는 상태에서 접근을 시도했습니다.`,
+            solutions: [
+                {
+                    title: '옵셔널 체이닝 사용',
+                    code: `// 잘못된 사용
+    interface User {
+        address?: {
+            street: string;
+        };
+    }
+    const user: User = {};
+    console.log(user.address.street);  // 에러!
+    
+    // 올바른 사용
+    console.log(user.address?.street);  // OK (undefined)`
+                },
+                {
+                    title: '타입 단언 사용',
+                    code: `// 값이 반드시 존재한다고 확신할 경우
+    console.log(user.address!.street);  // OK (주의: 런타임 오류 가능)`
+                },
+                {
+                    title: '기본값 설정',
+                    code: `const address = user.address ?? { street: "기본 주소" };
+    console.log(address.street);  // OK`
+                }
+            ]
+        };
+    }
+    
+    private handleInvalidTypeIndex(errorMessage: string): ErrorExplanation {
+        const typeMatch = errorMessage.match(/Type '([^']+)'/);
+        const invalidType = typeMatch ? typeMatch[1] : '지정된 타입';
+    
+        return {
+            title: '잘못된 인덱스 타입',
+            description: `'${invalidType}' 타입은 객체의 인덱스로 사용할 수 없습니다.`,
+            solutions: [
+                {
+                    title: '올바른 인덱스 타입 사용',
+                    code: `// 잘못된 사용
+    const obj: { [key: string]: any } = {};
+    const complexKey = { key: "value" };
+    obj[complexKey];  // 에러!
+    
+    // 올바른 사용
+    const stringKey: string = "key";
+    obj[stringKey];  // OK`
+                },
+                {
+                    title: 'Map 사용',
+                    code: `// 복잡한 키가 필요한 경우
+    const map = new Map<object, any>();
+    const complexKey = { key: "value" };
+    map.set(complexKey, "value");  // OK`
+                }
+            ]
+        };
+    }
+    
+    private handleNonIndexType(errorMessage: string): ErrorExplanation {
+        const typeMatch = errorMessage.match(/Type '([^']+)'/);
+        const invalidType = typeMatch ? typeMatch[1] : '지정된 타입';
+    
+        return {
+            title: '사용할 수 없는 인덱스 타입',
+            description: `'${invalidType}'는 인덱스 타입으로 사용할 수 없습니다. string, number, 또는 symbol만 사용 가능합니다.`,
+            solutions: [
+                {
+                    title: '문자열 인덱스 사용',
+                    code: `interface StringIndex {
+        [key: string]: any;
+    }
+    const obj: StringIndex = {};
+    obj["validKey"] = "value";  // OK`
+                },
+                {
+                    title: '숫자 인덱스 사용',
+                    code: `interface NumberIndex {
+        [index: number]: any;
+    }
+    const arr: NumberIndex = [];
+    arr[0] = "value";  // OK`
+                }
+            ]
+        };
+    }
+    
+    private handleMissingIndexSignature(errorMessage: string): ErrorExplanation {
+        return {
+            title: '인덱스 시그니처 누락',
+            description: '객체에 동적 속성 접근을 위한 인덱스 시그니처가 정의되어 있지 않습니다.',
+            solutions: [
+                {
+                    title: '인덱스 시그니처 추가',
+                    code: `// 잘못된 사용
+    interface Obj {
+        knownProp: string;
+    }
+    const obj: Obj = { knownProp: "value" };
+    obj["dynamicProp"] = "value";  // 에러!
+    
+    // 올바른 사용
+    interface ObjWithIndex {
+        knownProp: string;
+        [key: string]: string;
+    }
+    const obj: ObjWithIndex = { knownProp: "value" };
+    obj["dynamicProp"] = "value";  // OK`
+                },
+                {
+                    title: 'Record 타입 사용',
+                    code: `// Record 유틸리티 타입 사용
+    const obj: Record<string, string> = {};
+    obj["anyKey"] = "value";  // OK`
+                }
+            ]
+        };
+    }
+    
+    private handleComplexUnionType(errorMessage: string): ErrorExplanation {
+        return {
+            title: '복잡한 유니온 타입',
+            description: '타입 시스템이 처리하기에 너무 복잡한 유니온 타입이 생성되었습니다.',
+            solutions: [
+                {
+                    title: '공통 인터페이스 사용',
+                    code: `// 복잡한 유니온 타입
+    type Complex = 
+        | { type: "A"; propA: string }
+        | { type: "B"; propB: number }
+        | { type: "C"; propC: boolean };
+    
+    // 단순화된 버전
+    interface Simplified {
+        type: string;
+        value: any;
+    }`
+                },
+                {
+                    title: '타입 그룹화',
+                    code: `// 관련된 타입들을 그룹화
+    interface BaseType {
+        type: string;
+    }
+    
+    interface TypeA extends BaseType {
+        type: "A";
+        propA: string;
+    }
+    
+    interface TypeB extends BaseType {
+        type: "B";
+        propB: number;
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleImplicitThisType(errorMessage: string): ErrorExplanation {
+        return {
+            title: '암시적 this 타입',
+            description: '함수 내에서 this의 타입이 명시적으로 지정되지 않았습니다.',
+            solutions: [
+                {
+                    title: 'this 타입 명시',
+                    code: `// 잘못된 사용
+    class Example {
+        private value: number = 0;
+        
+        callback() {
+            setTimeout(function() {
+                this.value++;  // 에러!
+            });
+        }
+    }
+    
+    // 올바른 사용
+    class Example {
+        private value: number = 0;
+        
+        callback() {
+            setTimeout(() => {
+                this.value++;  // OK
+            });
+        }
+    }`
+                },
+                {
+                    title: 'this 매개변수 사용',
+                    code: `class Example {
+        private value: number = 0;
+        
+        increment(this: Example) {
+            this.value++;  // OK
+        }
+    }`
+                }
+            ]
+        };
+    }
+    
+    private handleUMDGlobalInNonModule(errorMessage: string): ErrorExplanation {
+        const moduleMatch = errorMessage.match(/'([^']+)'/);
+        const moduleName = moduleMatch ? moduleMatch[1] : 'module';
+    
+        return {
+            title: 'UMD 전역 모듈 참조 오류',
+            description: `'${moduleName}'은 UMD 전역 모듈이지만, 현재 파일이 모듈로 인식되지 않습니다.`,
+            solutions: [
+                {
+                    title: '모듈 선언 추가',
+                    code: `// 파일을 모듈로 만들기
+    export {};  // 빈 export
+    
+    // 이후 UMD 모듈 사용 가능
+    import * as Module from '${moduleName}';`
+                },
+                {
+                    title: '타입 선언 참조',
+                    code: `/// <reference types="${moduleName}" />
+    
+    // 또는
+    import type { SomeType } from '${moduleName}';`
+                }
+            ]
+        };
+    }
+    
+    private handleInterfaceExtensionError(errorMessage: string): ErrorExplanation {
+        const interfaceMatch = errorMessage.match(/interface '([^']+)'/);
+        const interfaceName = interfaceMatch ? interfaceMatch[1] : 'Interface';
+    
+        return {
+            title: '잘못된 인터페이스 확장',
+            description: `'${interfaceName}' 인터페이스를 잘못된 방식으로 확장하려고 했습니다.`,
+            solutions: [
+                {
+                    title: 'implements 키워드 사용',
+                    code: `// 잘못된 사용
+    class MyClass extends SomeInterface {  // 에러!
+        // ...
+    }
+    
+    // 올바른 사용
+    class MyClass implements SomeInterface {
+        // 인터페이스의 모든 멤버 구현
+    }`
+                },
+                {
+                    title: '인터페이스 확장',
+                    code: `// 인터페이스 간 확장
+    interface BaseInterface {
+        prop: string;
+    }
+    
+    interface ExtendedInterface extends BaseInterface {
+        additionalProp: number;
+    }`
+                }
+            ]
+        };
     }
     private handleInvalidIndexType(errorMessage: string): ErrorExplanation {
         const invalidType = errorMessage.match(/Type '([^']+)'/)?.[1] || '{}';
