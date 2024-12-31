@@ -86,9 +86,9 @@ function getWebviewContent(explanation: ErrorExplanation): string {
         <head>
             <style>
                 body { font-family: system-ui; padding: 20px; }
-                .error-title { color: #f44336; font-size: 1.2em; margin-bottom: 15px; }
-                .explanation { margin: 10px 0; padding: 10px; background: #f5f5f5; }
-                .solution { margin: 10px 0; padding: 10px; background: #e3f2fd; }
+                .error-title { color: #ff0000; font-size: 1.2em; margin-bottom: 15px; }
+                .explanation { margin: 10px 0; padding: 10px; background: #000000; }
+                .solution { margin: 10px 0; padding: 10px; background: #000000; }
                 pre { background: #2d2d2d; color: #ccc; padding: 10px; border-radius: 4px; }
                 code { font-family: 'Consolas', 'Courier New', monospace; }
             </style>
