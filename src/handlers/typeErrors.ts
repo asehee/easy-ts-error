@@ -32,13 +32,13 @@ export class TypeErrorHandler implements ErrorHandler {
             case 2314: // Generic type error
                 return this.handleGenericTypeError(errorMessage);
             case 2322: // Type not assignable
-                return this.handleTypeNotAssignable(errorMessage);
+                return this.handleTypeNotAssignableDetailed(errorMessage);
             case 2339: // Property does not exist on type
-                return this.handlePropertyNotExist(errorMessage);
+                return this.handlePropertyNotExistDetailed(errorMessage);
             case 2344: // Type does not implement interface
                 return this.handleTypeNotImplementInterface(errorMessage);
             case 2345: // Argument type error
-                return this.handleArgumentTypeError(errorMessage);
+                return this.handleArgumentTypeErrorDetailed(errorMessage);
             case 2348: // Value of type X is not callable
                 return this.handleValueNotCallable(errorMessage);
             case 2349: // This expression is not callable
@@ -159,10 +159,362 @@ export class TypeErrorHandler implements ErrorHandler {
                 return this.handleCircularInference(errorMessage);
             case 2749: // Interface not correctly implemented
                 return this.handleInterfaceNotImplemented(errorMessage);
+            case 2750: // A type contains circular references
+                return this.handleCircularTypeReference(errorMessage);
+            case 2783: // 'this' in static method
+                return this.handleThisInStaticMethod();
+            case 2784: // Cannot use JSX when '--jsx' is not set
+                return this.handleJsxNotEnabled();
+            case 2790: // The operand of a delete operator must be a property reference
+                return this.handleInvalidDeleteOperand(errorMessage);
+            case 2794: // Expected 1 argument, but got 0 or more
+                return this.handleExpectedArguments(errorMessage);
+            case 2821: // Element implicitly has 'any' type
+                return this.handleImplicitAnyElement(errorMessage);
             default:
                 return explanation;
         }
     }
+    private handleTypeNotAssignableDetailed(errorMessage: string): ErrorExplanation {
+        const sourceType = errorMessage.match(/Type '([^']+)'/)?.[1] || 'SourceType';
+        const targetType = errorMessage.match(/type '([^']+)'/)?.[1] || 'TargetType';
+
+        return {
+            title: `타입 할당 불가`,
+            description: `'${sourceType}' 타입을 '${targetType}' 타입에 할당할 수 없습니다.`,
+            solutions: [
+                {
+                    title: '타입 단언 사용',
+                    code: `// 타입이 호환된다고 확신하는 경우
+const value = sourceValue as ${targetType};`
+                },
+                {
+                    title: '유니온 타입 사용',
+                    code: `// 두 타입을 모두 허용
+type Combined = ${sourceType} | ${targetType};
+let value: Combined;`
+                },
+                {
+                    title: '타입 변환 함수 사용',
+                    code: `function convert${sourceType}To${targetType}(value: ${sourceType}): ${targetType} {
+    // 적절한 변환 로직
+    return convertedValue;
+}`
+                }
+            ]
+        };
+    }
+
+    private handleArgumentTypeErrorDetailed(errorMessage: string): ErrorExplanation {
+        const argType = errorMessage.match(/type '([^']+)'/)?.[1] || 'ArgType';
+        const paramType = errorMessage.match(/expected type '([^']+)'/)?.[1] || 'ParamType';
+
+        return {
+            title: '인수 타입 오류',
+            description: `'${argType}' 타입의 인수를 '${paramType}' 타입의 매개변수에 전달할 수 없습니다.`,
+            solutions: [
+                {
+                    title: '타입 변환',
+                    code: `// 명시적 타입 변환
+const converted = value as ${paramType};
+functionName(converted);`
+                },
+                {
+                    title: '타입 가드 사용',
+                    code: `if (typeof value === '${paramType.toLowerCase()}') {
+    functionName(value);
+} else {
+    // 다른 타입 처리
+}`
+                },
+                {
+                    title: '매개변수 타입 수정',
+                    code: `// 함수 시그니처 수정
+function functionName(param: ${argType} | ${paramType}) {
+    // 타입에 따른 처리
+}`
+                }
+            ]
+        };
+    }
+
+    private handlePropertyNotExistDetailed(errorMessage: string): ErrorExplanation {
+        const propertyName = errorMessage.match(/property '([^']+)'/)?.[1] || 'property';
+        const typeName = errorMessage.match(/type '([^']+)'/)?.[1] || 'Type';
+
+        return {
+            title: `존재하지 않는 속성 접근`,
+            description: `'${typeName}' 타입에는 '${propertyName}' 속성이 존재하지 않습니다.`,
+            solutions: [
+                {
+                    title: '타입에 속성 추가',
+                    code: `interface ${typeName} {
+    ${propertyName}: string;  // 또는 적절한 타입
+    // 기존 속성들...
+}`
+                },
+                {
+                    title: '옵셔널 체이닝 사용',
+                    code: `// 안전한 속성 접근
+const value = obj?.${propertyName};
+
+// 기본값과 함께 사용
+const value = obj?.${propertyName} ?? defaultValue;`
+                },
+                {
+                    title: '인터페이스 확장',
+                    code: `interface Extended${typeName} extends ${typeName} {
+    ${propertyName}: string;  // 새로운 속성 추가
+}`
+                }
+            ]
+        };
+    }
+
+    private handleVariableAccessBeforeInit(errorMessage: string): ErrorExplanation {
+        const variableName = errorMessage.match(/Variable '([^']+)'/)?.[1] || 'variable';
+        
+        return {
+            title: '초기화 전 변수 접근',
+            description: `'${variableName}' 변수가 초기화되기 전에 접근했습니다.`,
+            solutions: [
+                {
+                    title: '변수 초기화 추가',
+                    code: `// 선언과 동시에 초기화
+let ${variableName} = initialValue;
+
+// 또는 기본값 설정
+let ${variableName} = defaultValue;`
+                },
+                {
+                    title: '조건부 접근',
+                    code: `let ${variableName}: string | undefined;
+
+// 초기화 여부 확인 후 사용
+if (${variableName} !== undefined) {
+    console.log(${variableName});
+}`
+                },
+                {
+                    title: '즉시 실행 함수 사용',
+                    code: `const ${variableName} = (() => {
+    // 복잡한 초기화 로직
+    return computedValue;
+})();`
+                }
+            ]
+        };
+    }
+
+    private handleArrayLiteralInference(errorMessage: string): ErrorExplanation {
+        return {
+            title: '배열 리터럴 타입 추론',
+            description: '배열 리터럴의 타입이 너무 넓게 또는 좁게 추론되었습니다.',
+            solutions: [
+                {
+                    title: '명시적 타입 지정',
+                    code: `// 명시적 배열 타입
+const array: string[] = ["a", "b", "c"];
+
+// 또는 as const 사용
+const array = ["a", "b", "c"] as const;`
+                },
+                {
+                    title: '유니온 타입 사용',
+                    code: `// 여러 타입을 허용하는 배열
+const array: (string | number)[] = ["a", 1, "b", 2];
+
+// 또는 튜플 타입
+const tuple: [string, number, string] = ["a", 1, "b"];`
+                }
+            ]
+        };
+    }
+
+    private handlePromiseInferenceFailure(errorMessage: string): ErrorExplanation {
+        return {
+            title: 'Promise 타입 추론 실패',
+            description: 'Promise의 반환 타입을 추론할 수 없습니다.',
+            solutions: [
+                {
+                    title: '명시적 Promise 타입',
+                    code: `async function getData(): Promise<DataType> {
+    const response = await fetch(url);
+    return response.json();
+}`
+                },
+                {
+                    title: '제네릭 Promise 사용',
+                    code: `async function fetchData<T>(): Promise<T> {
+    const response = await fetch(url);
+    return response.json();
+}
+
+// 사용
+const data = await fetchData<UserType>();`
+                }
+            ]
+        };
+    }
+
+    private handleImplicitAnyElement(errorMessage: string): ErrorExplanation {
+        const elementName = errorMessage.match(/Element '([^']+)'/)?.[1] || 'element';
+        return {
+            title: '암시적 any 타입 요소',
+            description: `'${elementName}' 요소가 암시적으로 any 타입으로 추론되었습니다.`,
+            solutions: [
+                {
+                    title: '명시적 타입 지정',
+                    code: `// 배열 요소에 타입 지정
+const array: string[] = ["a", "b", "c"];
+
+// 또는 제네릭 사용
+const array: Array<string> = ["a", "b", "c"];`
+                },
+                {
+                    title: '타입 단언 사용',
+                    code: `const element = unknownValue as string;
+// 또는
+const element = <string>unknownValue;`
+                }
+            ]
+        };
+    }
+    private handleCircularTypeReference(errorMessage: string): ErrorExplanation {
+        return {
+            title: '순환 참조 타입',
+            description: '타입 정의에서 순환 참조가 발견되었습니다.',
+            solutions: [
+                {
+                    title: 'interface 사용',
+                    code: `// 타입 별칭 대신 interface 사용
+interface Node {
+    value: string;
+    children: Node[];  // 순환 참조가 허용됨
+}`
+                },
+                {
+                    title: '간접 참조로 변경',
+                    code: `type NodeValue = {
+    value: string;
+};
+
+type Node = NodeValue & {
+    children: Array<Node>;  // 간접 참조
+};`
+                }
+            ]
+        };
+    }
+
+    private handleThisInStaticMethod(): ErrorExplanation {
+        return {
+            title: 'static 메서드에서 this 사용',
+            description: 'static 메서드 내에서는 인스턴스의 this를 참조할 수 없습니다.',
+            solutions: [
+                {
+                    title: 'static 메서드에서 클래스 이름 사용',
+                    code: `class Example {
+    static value: string = "test";
+    
+    static method() {
+        // this.value 대신 클래스 이름 사용
+        console.log(Example.value);
+    }
+}`
+                },
+                {
+                    title: '인스턴스 메서드로 변경',
+                    code: `class Example {
+    value: string = "test";
+    
+    method() {
+        // 인스턴스 메서드에서는 this 사용 가능
+        console.log(this.value);
+    }
+}`
+                }
+            ]
+        };
+    }
+
+    private handleJsxNotEnabled(): ErrorExplanation {
+        return {
+            title: 'JSX 설정 누락',
+            description: 'JSX를 사용하기 위해서는 TypeScript 컴파일러 옵션에서 JSX를 활성화해야 합니다.',
+            solutions: [
+                {
+                    title: 'tsconfig.json에서 JSX 활성화',
+                    code: `{
+    "compilerOptions": {
+        "jsx": "react",  // 또는 "react-jsx", "preserve" 등
+        // 기타 설정...
+    }
+}`
+                },
+                {
+                    title: '파일 확장자 변경',
+                    code: `// .ts 파일을 .tsx로 변경
+// MyComponent.ts → MyComponent.tsx`
+                }
+            ]
+        };
+    }
+
+    private handleInvalidDeleteOperand(errorMessage: string): ErrorExplanation {
+        const operand = errorMessage.match(/delete (.+)/)?.[1] || 'operand';
+        return {
+            title: '잘못된 delete 연산자 사용',
+            description: 'delete 연산자는 객체의 속성에만 사용할 수 있습니다.',
+            solutions: [
+                {
+                    title: '올바른 delete 사용',
+                    code: `// 잘못된 사용
+delete variable;  // 에러
+
+// 올바른 사용
+delete object.property;  // OK
+delete object['property'];  // OK`
+                },
+                {
+                    title: '값 재할당으로 대체',
+                    code: `// delete 대신 undefined 할당
+object.property = undefined;
+
+// 또는 null 할당
+object.property = null;`
+                }
+            ]
+        };
+    }
+
+    private handleExpectedArguments(errorMessage: string): ErrorExplanation {
+        const expected = errorMessage.match(/Expected (\d+)/)?.[1] || '1';
+        return {
+            title: '인수 개수 불일치',
+            description: `함수에 ${expected}개의 인수가 필요하지만, 다른 개수의 인수가 제공되었습니다.`,
+            solutions: [
+                {
+                    title: '필요한 인수 제공',
+                    code: `// 잘못된 호출
+function example(param1: string, param2: number) {}
+example();  // 에러
+
+// 올바른 호출
+example("text", 42);  // OK`
+                },
+                {
+                    title: '선택적 매개변수로 변경',
+                    code: `function example(param1?: string, param2?: number) {
+    const p1 = param1 ?? "default";
+    const p2 = param2 ?? 0;
+    // ...
+}`
+                }
+            ]
+        };
+    }
+
     private handleInvalidPromiseType(errorMessage: string): ErrorExplanation {
         const typeMatch = errorMessage.match(/Type '([^']+)'/);
         const invalidType = typeMatch ? typeMatch[1] : '반환된 타입';
